@@ -93,12 +93,23 @@ fn handle_category<R: BufRead>(element: Element<R>) -> Option<Category> {
 
 // Handles <managingEditor> and <webMaster>
 fn handle_contact<R: BufRead>(role: &str, element: Element<R>) -> Option<Person> {
-    element.child_as_text().map(|email| {
-        let mut person = Person::new(role);
-        person.email = Some(email);
-        person
+    element.child_as_text().map(|string| {
+        // The author element is supposed to be an email addres, but often it's a name and sometimes an URL.
+        if string.contains('@') {
+            let mut person = Person::new(role);
+            person.email = Some(string);
+            return person
+        } else if string.to_lowercase().starts_with("http") {
+            let mut person = Person::new(role);
+            person.uri = Some(string);
+            return person
+        } else {
+            let person = Person::new(string.as_ref());
+            return person
+        }
     })
 }
+
 
 fn handle_generator<R: BufRead>(element: Element<R>) -> Option<Generator> {
     element.child_as_text().map(|c| {
